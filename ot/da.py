@@ -928,7 +928,7 @@ class BaseTransport(BaseEstimator):
                     transp_Xs_ = np.dot(transp, self.xt_)
 
                     # define the transported points
-                    transp_Xs_ = transp_Xs_[idx, :] + Xs[bi] - self.xs_[idx, :]
+                    transp_Xs_ = transp_Xs_[idx, :] ### TM+ Xs[bi] - self.xs_[idx, :]
 
                     transp_Xs.append(transp_Xs_)
 
