@@ -780,7 +780,7 @@ class BaseTransport(BaseEstimator):
     inverse_transform method should always get as input a Xt parameter
     """
 
-    def fit(self, Xs=None, ys=None, Xt=None, yt=None):
+    def fit(self, Xs=None, ys=None, Xt=None, yt=None, M=None):
         """Build a coupling matrix from source and target sets of samples
         (Xs, ys) and (Xt, yt)
 
@@ -809,7 +809,12 @@ class BaseTransport(BaseEstimator):
         if check_params(Xs=Xs, Xt=Xt):
 
             # pairwise distance
-            self.cost_ = dist(Xs, Xt, metric=self.metric)
+            if M is not None:
+                self.cost_ = M
+
+            else:
+                self.cost_ = dist(Xs, Xt, metric=self.metric)
+
             self.cost_ = cost_normalization(self.cost_, self.norm)
 
             if (ys is not None) and (yt is not None):
@@ -918,7 +923,7 @@ class BaseTransport(BaseEstimator):
                 for bi in batch_ind:
 
                     # get the nearest neighbor in the source domain
-                    D0 = dist(Xs[bi], self.xs_)
+                    D0 = dist(Xs[bi], self.xs_, metric=self.metric)
                     idx = np.argmin(D0, axis=1)
 
                     # transport the source samples
@@ -1336,7 +1341,7 @@ class EMDTransport(BaseTransport):
         self.out_of_sample_map = out_of_sample_map
         self.max_iter = max_iter
 
-    def fit(self, Xs, ys=None, Xt=None, yt=None):
+    def fit(self, Xs, ys=None, Xt=None, yt=None, M=None):
         """Build a coupling matrix from source and target sets of samples
         (Xs, ys) and (Xt, yt)
 
@@ -1361,7 +1366,7 @@ class EMDTransport(BaseTransport):
             Returns self.
         """
 
-        super(EMDTransport, self).fit(Xs, ys, Xt, yt)
+        super(EMDTransport, self).fit(Xs, ys, Xt, yt, M=M)
 
         returned_ = emd(
             a=self.mu_s, b=self.mu_t, M=self.cost_, numItermax=self.max_iter,

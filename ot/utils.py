@@ -105,6 +105,79 @@ def euclidean_distances(X, Y, squared=False):
     return distances if squared else np.sqrt(distances, out=distances)
 
 
+def euclidean_metric(x, y):
+    return np.linalg.norm(x-y)
+
+def spacetime_metric(x, y):
+    return euclidean_metric(x, y)
+
+
+import itertools
+def wasserstein_metric(X, Y, metric="spacetime", squared=False):
+    """
+    Considering the rows of X (and Y=X) as vectors, compute the
+    Wasserstein distance matrix between each pair of vectors.
+    Parameters
+    ----------
+    X : {array-like}, shape (n_samples_1, n_features)
+    Y : {array-like}, shape (n_samples_2, n_features)
+    squared : boolean, optional
+        Return squared Euclidean distances.
+    Returns
+    -------
+    distances : {array}, shape (n_samples_1, n_samples_2)
+    """
+    indices = list(itertools.permutations([0, 1, 2, 3]))
+
+    if metric == "spacetime":
+        rho = spacetime_metric
+
+    else:
+        rho = euclidean_metric
+
+    u = []
+    u.append(X[0:4])
+    u.append(X[4:8])
+    u.append(X[8:12])
+    u.append(X[12:16])
+    
+    v = []
+    v.append(Y[0:4])
+    v.append(Y[4:8])
+    v.append(Y[8:12])
+    v.append(Y[12:16])
+
+    distances = []
+
+    for ind in indices:
+        temp = 0
+        for i in range(4):
+           temp += rho(u[i], v[ind[i]])**2
+
+        distances.append(temp)
+
+    out = 0.25 * np.min(distances)
+
+    if squared:
+        return out
+
+    return np.sqrt(out)
+
+def wasserstein_distances(X, Y, squared=False):
+    out = np.empty((X.shape[0], Y.shape[0]))
+
+    for i in range(X.shape[0]):
+        if i % 100 == 0:
+            print(i)
+
+        for j in range(Y.shape[0]):
+            out[i,j] = wasserstein_metric(X[i,:], Y[j,:], squared=False)
+
+    print(out)
+
+    return out
+
+
 def dist(x1, x2=None, metric='sqeuclidean'):
     """Compute distance between samples in x1 and x2 using function scipy.spatial.distance.cdist
 
@@ -132,8 +205,20 @@ def dist(x1, x2=None, metric='sqeuclidean'):
     """
     if x2 is None:
         x2 = x1
+    
+    print("!")
+
     if metric == "sqeuclidean":
         return euclidean_distances(x1, x2, squared=True)
+                  
+    if metric == "sq_euclidean_wasserstein":
+        print("Wasserstein")
+        M = wasserstein_distances(x1, x2, squared=True)
+        return M
+
+    if metric == "sq_spacetime_wasserstein":
+        return wasserstein_distances(x1, x2, squared=True)
+
     return cdist(x1, x2, metric=metric)
 
 
