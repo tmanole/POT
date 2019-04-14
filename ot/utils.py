@@ -14,6 +14,9 @@ import time
 import numpy as np
 from scipy.spatial.distance import cdist
 import sys
+
+import numexpr as ne   #TM
+
 import warnings
 try:
     from inspect import signature
@@ -135,11 +138,10 @@ def wasserstein_metric(X, Y, metric="spacetime", squared=False):
     else:
         rho = euclidean_metric
 
-    u = []
-    u.append(X[0:4])
-    u.append(X[4:8])
-    u.append(X[8:12])
-    u.append(X[12:16])
+    u1 = X[0:4]
+    u2 = X[4:8]
+    u3 = X[8:12]
+    u4 = X[12:16]
     
     v = []
     v.append(Y[0:4])
@@ -150,18 +152,21 @@ def wasserstein_metric(X, Y, metric="spacetime", squared=False):
     distances = []
 
     for ind in indices:
-        temp = 0
-        for i in range(4):
-           temp += rho(u[i], v[ind[i]])**2
+        v1 = v[ind[0]]
+        v2 = v[ind[1]]
+        v3 = v[ind[2]]
+        v4 = v[ind[3]]
 
-        distances.append(temp)
+        distances.append(ne.evaluate("sum((u1-v1)**2 + (u2-v2)**2 + (u3-v3)**2 + (u4-v4)**2)"))
 
+    print("!")
     out = 0.25 * np.min(distances)
 
     if squared:
         return out
 
     return np.sqrt(out)
+
 
 def wasserstein_distances(X, Y, squared=False):
     out = np.empty((X.shape[0], Y.shape[0]))
@@ -205,8 +210,6 @@ def dist(x1, x2=None, metric='sqeuclidean'):
     """
     if x2 is None:
         x2 = x1
-    
-    print("!")
 
     if metric == "sqeuclidean":
         return euclidean_distances(x1, x2, squared=True)

@@ -873,7 +873,7 @@ class BaseTransport(BaseEstimator):
 
         return self.fit(Xs, ys, Xt, yt).transform(Xs, ys, Xt, yt)
 
-    def transform(self, Xs=None, ys=None, Xt=None, yt=None, batch_size=128):
+    def transform(self, Xs=None, ys=None, Xt=None, yt=None, M=None, batch_size=128):
         """Transports source samples Xs onto target ones Xt
 
         Parameters
@@ -884,7 +884,7 @@ class BaseTransport(BaseEstimator):
             The class labels
         Xt : array-like, shape (n_target_samples, n_features)
             The training input samples.
-        yt : array-like, shape (n_target_samples,)
+        yt : array-like, shape (n_target_samples,
             The class labels. If some target samples are unlabeled, fill the
             yt's elements with -1.
 
@@ -919,18 +919,27 @@ class BaseTransport(BaseEstimator):
                     indices[i:i + batch_size]
                     for i in range(0, len(indices), batch_size)]
 
+                batch_ind = [indices[i:i + batch_size] for i in range(0, len(indices), batch_size)]
+
+
                 transp_Xs = []
                 for bi in batch_ind:
 
                     # get the nearest neighbor in the source domain
-                    D0 = dist(Xs[bi], self.xs_, metric=self.metric)
+                    if M is not None:
+                        D0 = M[bi,:]
+
+                    else:
+                        D0 = dist(Xs[bi], self.xs_, metric=self.metric)
+
                     idx = np.argmin(D0, axis=1)
 
                     # transport the source samples
                     transp = self.coupling_ / np.sum(
                         self.coupling_, 1)[:, None]
                     transp[~ np.isfinite(transp)] = 0
-                    transp_Xs_ = np.dot(transp, self.xt_)
+                    transp_Xs_ = np.dot(transp, self.xt_) #np.matmul(transp.transpose(), self.xt_) 
+                    # April 10th. The above line was originally np.dot(transp, self.xt_).
 
                     # define the transported points
                     transp_Xs_ = transp_Xs_[idx, :] ### TM+ Xs[bi] - self.xs_[idx, :]
